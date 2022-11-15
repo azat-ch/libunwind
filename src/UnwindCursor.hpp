@@ -2703,7 +2703,8 @@ bool UnwindCursor<A, R>::setInfoForSigReturn(Registers_s390x &) {
   struct iovec remote_iov = {reinterpret_cast<void *>(pc), sizeof(inst)};
   long bytesRead =
       syscall(SYS_process_vm_readv, getpid(), &local_iov, 1, &remote_iov, 1, 0);
-
+  if (bytesRead == 0)
+    return false;
   if (inst == 0x0a77 || inst == 0x0aad) {
     _info = {};
     _info.start_ip = pc;
