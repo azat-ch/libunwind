@@ -2697,7 +2697,14 @@ bool UnwindCursor<A, R>::setInfoForSigReturn(Registers_s390x &) {
   // own restorer function, though, or user-mode QEMU might write a trampoline
   // onto the stack.
   const pint_t pc = static_cast<pint_t>(this->getReg(UNW_REG_IP));
-  const uint16_t inst = _addressSpace.get16(pc);
+  uint16_t inst = 0;
+
+  struct iovec local_iov = {&inst, sizeof(inst)};
+  struct iovec remote_iov = {reinterpret_cast<void *>(pc), sizeof(inst)};
+  long bytesRead =
+      syscall(SYS_process_vm_readv, getpid(), &local_iov, 1, &remote_iov, 1, 0);
+  if (bytesRead == 0)
+    return false;
   if (inst == 0x0a77 || inst == 0x0aad) {
     _info = {};
     _info.start_ip = pc;
