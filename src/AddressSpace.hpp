@@ -23,6 +23,8 @@
 #include "EHHeaderParser.hpp"
 #include "Registers.hpp"
 
+extern "C" __attribute__((__weak__)) bool isPointerReadable(const void * ptr);
+
 #ifndef _LIBUNWIND_USE_DLADDR
   #if !(defined(_LIBUNWIND_IS_BAREMETAL) || defined(_WIN32) || defined(_AIX))
     #define _LIBUNWIND_USE_DLADDR 1
@@ -157,31 +159,43 @@ public:
   typedef uintptr_t pint_t;
   typedef intptr_t  sint_t;
   uint8_t         get8(pint_t addr) {
+    if (isPointerReadable && !isPointerReadable((void *)addr))
+      return 0;
     uint8_t val;
     memcpy(&val, (void *)addr, sizeof(val));
     return val;
   }
   uint16_t         get16(pint_t addr) {
+    if (isPointerReadable && !isPointerReadable((void *)addr))
+      return 0;
     uint16_t val;
     memcpy(&val, (void *)addr, sizeof(val));
     return val;
   }
   uint32_t         get32(pint_t addr) {
+    if (isPointerReadable && !isPointerReadable((void *)addr))
+      return 0;
     uint32_t val;
     memcpy(&val, (void *)addr, sizeof(val));
     return val;
   }
   uint64_t         get64(pint_t addr) {
+    if (isPointerReadable && !isPointerReadable((void *)addr))
+      return 0;
     uint64_t val;
     memcpy(&val, (void *)addr, sizeof(val));
     return val;
   }
   double           getDouble(pint_t addr) {
+    if (isPointerReadable && !isPointerReadable((void *)addr))
+      return 0;
     double val;
     memcpy(&val, (void *)addr, sizeof(val));
     return val;
   }
   v128             getVector(pint_t addr) {
+    if (isPointerReadable && !isPointerReadable((void *)addr))
+      return {};
     v128 val;
     memcpy(&val, (void *)addr, sizeof(val));
     return val;
@@ -221,6 +235,8 @@ inline uint64_t LocalAddressSpace::getRegister(pint_t addr) {
 inline uint64_t LocalAddressSpace::getULEB128(pint_t &addr, pint_t end) {
   const uint8_t *p = (uint8_t *)addr;
   const uint8_t *pend = (uint8_t *)end;
+  if (isPointerReadable && !isPointerReadable(p))
+      return 0;
   uint64_t result = 0;
   int bit = 0;
   do {
@@ -246,6 +262,8 @@ inline uint64_t LocalAddressSpace::getULEB128(pint_t &addr, pint_t end) {
 inline int64_t LocalAddressSpace::getSLEB128(pint_t &addr, pint_t end) {
   const uint8_t *p = (uint8_t *)addr;
   const uint8_t *pend = (uint8_t *)end;
+  if (isPointerReadable && !isPointerReadable(p))
+      return 0;
   int64_t result = 0;
   int bit = 0;
   uint8_t byte;
