@@ -25,8 +25,6 @@
 #include "DwarfParser.hpp"
 #include "config.h"
 
-extern "C" __attribute__((__weak__)) bool isPointerReadable(const void * ptr);
-
 
 namespace libunwind {
 
@@ -207,9 +205,6 @@ int DwarfInstructions<A, R>::stepWithDwarf(A &addressSpace, pint_t pc,
                                             R::getArch(), &prolog)) {
       // get pointer to cfa (architecture specific)
       pint_t cfa = getCFA(addressSpace, prolog, registers);
-
-      if (isPointerReadable && !isPointerReadable((void*)cfa))
-        return UNW_EBADFRAME;
 
        // restore registers that DWARF says were saved
       R newRegisters = registers;
