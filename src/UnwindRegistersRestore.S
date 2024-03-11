@@ -1366,8 +1366,8 @@ DEFINE_LIBUNWIND_FUNCTION(_ZN9libunwind19Registers_loongarch6jumptoEv)
   ld.d    $r29, $a0, (8 * 29)
   ld.d    $r30, $a0, (8 * 30)
   ld.d    $r31, $a0, (8 * 31)
-  ld.d    $r4,  $a0, (8 * 4)   // restore $a0 last
   ld.d    $r1,  $a0, (8 * 32)  // load new pc into $ra
+  ld.d    $r4,  $a0, (8 * 4)   // restore $a0 last
 
   jr      $ra
 
