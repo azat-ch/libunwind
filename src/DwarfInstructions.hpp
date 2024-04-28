@@ -266,7 +266,7 @@ int DwarfInstructions<A, R>::stepWithDwarf(A &addressSpace, pint_t pc,
                                     prolog.savedRegisters[i]));
           else
             return UNW_EBADREG;
-        } else if (i == (int)cieInfo.returnAddressRegister) {
+        } else if (false && i == (int)cieInfo.returnAddressRegister) {
             // Leaf function keeps the return address in register and there is no
             // explicit intructions how to restore it.
             returnAddress = registers.getRegister(cieInfo.returnAddressRegister);
