@@ -2880,7 +2880,7 @@ int UnwindCursor<A, R>::step() {
   // update info based on new PC
   if (result == UNW_STEP_SUCCESS) {
     this->setInfoBasedOnIPRegister(true);
-    this->fdes_pre[fde_pre_current] = this->_info.unwind_info;
+    this->fdes_pre[fde_pre_current++] = this->_info.unwind_info;
     if (_unwindInfoMissing)
       return UNW_STEP_END;
   }
