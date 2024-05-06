@@ -1004,7 +1004,8 @@ private:
                                               (pint_t)_info.unwind_info,
                                               _registers, _isSignalFrame,
                                               cies[cie_current++],
-                                              fdes[fde_current++]);
+                                              fdes[fde_current++],
+                                              ips[ip_current++]);
   }
 #endif
 
@@ -1306,6 +1307,9 @@ private:
 
   uintptr_t        cies[45]{};
   uint64_t         cie_current = 0;
+
+  uintptr_t        ips[45]{};
+  uint64_t         ip_current = 0;
 #endif
 };
 

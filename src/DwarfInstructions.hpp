@@ -40,7 +40,8 @@ public:
   static int stepWithDwarf(A &addressSpace, pint_t pc, pint_t fdeStart,
                            R &registers, bool &isSignalFrame,
                            uintptr_t & cie,
-                           uintptr_t & fde);
+                           uintptr_t & fde,
+                           uintptr_t & ip);
 
 private:
 
@@ -215,7 +216,10 @@ int DwarfInstructions<A, R>::stepWithDwarf(A &addressSpace, pint_t pc,
                                            pint_t fdeStart, R &registers,
                                            bool &isSignalFrame,
                                            uintptr_t & cie,
-                                           uintptr_t & fde) {
+                                           uintptr_t & fde,
+                                           uintptr_t & ip) {
+  ip = pc;
+
   FDE_Info fdeInfo;
   CIE_Info cieInfo;
   if (CFI_Parser<A>::decodeFDE(addressSpace, fdeStart, &fdeInfo,
