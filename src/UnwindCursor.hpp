@@ -1002,7 +1002,9 @@ private:
     return DwarfInstructions<A, R>::stepWithDwarf(_addressSpace,
                                               (pint_t)this->getReg(UNW_REG_IP),
                                               (pint_t)_info.unwind_info,
-                                              _registers, _isSignalFrame);
+                                              _registers, _isSignalFrame,
+                                              cies[cie_current++],
+                                              fdes[fde_current++]);
   }
 #endif
 
@@ -1297,15 +1299,26 @@ private:
 #if defined(_LIBUNWIND_CHECK_LINUX_SIGRETURN)
   bool             _isSigReturn = false;
 #endif
+
+#if !defined(_LIBUNWIND_NO_DEBUG)
+  uintptr_t        fdes[45]{};
+  uint64_t         fde_current = 0;
+
+  uintptr_t        cies[45]{};
+  uint64_t         cie_current = 0;
+#endif
 };
 
+
+#define STRINGIFY_HELPER(x) #x
+#define STRINGIFY(x) STRINGIFY_HELPER(x)
 
 template <typename A, typename R>
 UnwindCursor<A, R>::UnwindCursor(unw_context_t *context, A &as)
     : _addressSpace(as), _registers(context), _unwindInfoMissing(false),
       _isSignalFrame(false) {
   static_assert((check_fit<UnwindCursor<A, R>, unw_cursor_t>::does_fit),
-                "UnwindCursor<> does not fit in unw_cursor_t");
+                "UnwindCursor<> does not fit in unw_cursor_t: sizeof(unw_cursor_t)=" STRINGIFY(_LIBUNWIND_CURSOR_SIZE));
   static_assert((alignof(UnwindCursor<A, R>) <= alignof(unw_cursor_t)),
                 "UnwindCursor<> requires more alignment than unw_cursor_t");
   memset(&_info, 0, sizeof(_info));

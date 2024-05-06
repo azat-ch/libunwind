@@ -38,7 +38,9 @@ public:
   typedef typename A::sint_t sint_t;
 
   static int stepWithDwarf(A &addressSpace, pint_t pc, pint_t fdeStart,
-                           R &registers, bool &isSignalFrame);
+                           R &registers, bool &isSignalFrame,
+                           uintptr_t & cie,
+                           uintptr_t & fde);
 
 private:
 
@@ -211,11 +213,16 @@ bool DwarfInstructions<A, R>::getRA_SIGN_STATE(A &addressSpace, R registers,
 template <typename A, typename R>
 int DwarfInstructions<A, R>::stepWithDwarf(A &addressSpace, pint_t pc,
                                            pint_t fdeStart, R &registers,
-                                           bool &isSignalFrame) {
+                                           bool &isSignalFrame,
+                                           uintptr_t & cie,
+                                           uintptr_t & fde) {
   FDE_Info fdeInfo;
   CIE_Info cieInfo;
   if (CFI_Parser<A>::decodeFDE(addressSpace, fdeStart, &fdeInfo,
                                &cieInfo) == NULL) {
+    cie = cieInfo.cieStart;
+    fde = fdeInfo.fdeStart;
+
     PrologInfo prolog;
     if (CFI_Parser<A>::parseFDEInstructions(addressSpace, fdeInfo, cieInfo, pc,
                                             R::getArch(), &prolog)) {
