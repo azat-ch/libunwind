@@ -41,6 +41,7 @@ public:
                            R &registers, bool &isSignalFrame,
                            uintptr_t & cie,
                            uintptr_t & fde,
+                           uintptr_t & cfa,
                            uintptr_t & ip);
 
 private:
@@ -217,6 +218,7 @@ int DwarfInstructions<A, R>::stepWithDwarf(A &addressSpace, pint_t pc,
                                            bool &isSignalFrame,
                                            uintptr_t & cie,
                                            uintptr_t & fde,
+                                           uintptr_t & cfa_,
                                            uintptr_t & ip) {
   ip = pc;
 
@@ -232,6 +234,7 @@ int DwarfInstructions<A, R>::stepWithDwarf(A &addressSpace, pint_t pc,
                                             R::getArch(), &prolog)) {
       // get pointer to cfa (architecture specific)
       pint_t cfa = getCFA(addressSpace, prolog, registers);
+      cfa_ = cfa;
 
       if (!isPointerValid(cfa))
         return UNW_EBADFRAME;

@@ -1004,7 +1004,8 @@ private:
                                               (pint_t)_info.unwind_info,
                                               _registers, _isSignalFrame,
                                               cies[cie_current++],
-                                              fdes_post[fde_post_current++],
+                                              fdes[fde_current++],
+                                              cfas[cfa_current++],
                                               ips[ip_current++]);
   }
 #endif
@@ -1302,14 +1303,14 @@ private:
 #endif
 
 #if !defined(_LIBUNWIND_NO_DEBUG)
-  uintptr_t        fdes_pre[45]{};
-  uint64_t         fde_pre_current = 0;
-
-  uintptr_t        fdes_post[45]{};
-  uint64_t         fde_post_current = 0;
+  uintptr_t        fdes[45]{};
+  uint64_t         fde_current = 0;
 
   uintptr_t        cies[45]{};
   uint64_t         cie_current = 0;
+
+  uintptr_t        cfas[45]{};
+  uint64_t         cfa_current = 0;
 
   uintptr_t        ips[45]{};
   uint64_t         ip_current = 0;
@@ -2880,7 +2881,6 @@ int UnwindCursor<A, R>::step() {
   // update info based on new PC
   if (result == UNW_STEP_SUCCESS) {
     this->setInfoBasedOnIPRegister(true);
-    this->fdes_pre[fde_pre_current++] = this->_info.unwind_info;
     if (_unwindInfoMissing)
       return UNW_STEP_END;
   }
