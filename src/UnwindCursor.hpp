@@ -1303,11 +1303,11 @@ private:
 #endif
 
 #if !defined(_LIBUNWIND_NO_DEBUG)
-  uintptr_t        fdes[45]{};
-  uint64_t         fde_current = 0;
+  CFI_Parser<A>::FDE_Info fdes[45]{};
+  uint64_t                fde_current = 0;
 
-  uintptr_t        cies[45]{};
-  uint64_t         cie_current = 0;
+  CFI_Parser<A>::CIE_Info cies[45]{};
+  uint64_t                cie_current = 0;
 
   uintptr_t        cfas[45]{};
   uint64_t         cfa_current = 0;

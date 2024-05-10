@@ -39,8 +39,8 @@ public:
 
   static int stepWithDwarf(A &addressSpace, pint_t pc, pint_t fdeStart,
                            R &registers, bool &isSignalFrame,
-                           uintptr_t & cie,
-                           uintptr_t & fde,
+                           CFI_Parser<A>::CIE_Info & cie,
+                           CFI_Parser<A>::FDE_Info & fde,
                            uintptr_t & cfa,
                            uintptr_t & ip);
 
@@ -216,8 +216,8 @@ template <typename A, typename R>
 int DwarfInstructions<A, R>::stepWithDwarf(A &addressSpace, pint_t pc,
                                            pint_t fdeStart, R &registers,
                                            bool &isSignalFrame,
-                                           uintptr_t & cie,
-                                           uintptr_t & fde,
+                                           CIE_Info & cie,
+                                           FDE_Info & fde,
                                            uintptr_t & cfa_,
                                            uintptr_t & ip) {
   ip = pc;
@@ -226,8 +226,8 @@ int DwarfInstructions<A, R>::stepWithDwarf(A &addressSpace, pint_t pc,
   CIE_Info cieInfo;
   if (CFI_Parser<A>::decodeFDE(addressSpace, fdeStart, &fdeInfo,
                                &cieInfo) == NULL) {
-    cie = cieInfo.cieStart;
-    fde = fdeInfo.fdeStart;
+    cie = cieInfo;
+    fde = fdeInfo;
 
     PrologInfo prolog;
     if (CFI_Parser<A>::parseFDEInstructions(addressSpace, fdeInfo, cieInfo, pc,
