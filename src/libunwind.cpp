@@ -341,6 +341,8 @@ void __unw_remove_dynamic_eh_frame_section(unw_word_t eh_frame_start) {
 #endif // !defined(__USING_SJLJ_EXCEPTIONS__)
 
 int unw_backtrace(void **buffer, int size) {
+  void ** fp = (void **)__builtin_frame_address(0);
+
   unw_context_t context;
   unw_cursor_t cursor;
   if (unw_getcontext(&context) || unw_init_local(&cursor, &context)) {
@@ -349,12 +351,20 @@ int unw_backtrace(void **buffer, int size) {
 
   unw_word_t ip;
   int current = 0;
-  while (unw_step(&cursor) > 0) {
+  while (true) {
+    if (unw_step(&cursor) <= 0) {
+      break;
+    }
     if (current >= size || unw_get_reg(&cursor, UNW_REG_IP, &ip)) {
       break;
     }
 
+    void ** next_fp = (void **)*fp, *pc = fp[1];
+    if ((unw_word_t)pc != ip)
+      abort();
+
     buffer[current++] = reinterpret_cast<void *>(static_cast<uintptr_t>(ip));
+    fp = next_fp;
   }
 
   return current;
