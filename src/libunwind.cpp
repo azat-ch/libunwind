@@ -359,9 +359,13 @@ int unw_backtrace(void **buffer, int size) {
       break;
     }
 
-    void ** next_fp = (void **)*fp, *pc = fp[1];
-    if ((unw_word_t)pc != ip)
-      abort();
+    /// sometimes it is bugos, usually at the end of the stack
+    void ** next_fp = nullptr;
+    if ((uint64_t)fp > 4096) {
+        void ** next_fp = (void **)*fp, *pc = fp[1];
+        if ((unw_word_t)pc != ip)
+          abort();
+    }
 
     buffer[current++] = reinterpret_cast<void *>(static_cast<uintptr_t>(ip));
     fp = next_fp;
