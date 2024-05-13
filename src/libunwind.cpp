@@ -341,7 +341,9 @@ void __unw_remove_dynamic_eh_frame_section(unw_word_t eh_frame_start) {
 #endif // !defined(__USING_SJLJ_EXCEPTIONS__)
 
 int unw_backtrace(void **buffer, int size) {
+#if 0
   void ** fp = (void **)__builtin_frame_address(0);
+#endif
 
   unw_context_t context;
   unw_cursor_t cursor;
@@ -359,6 +361,7 @@ int unw_backtrace(void **buffer, int size) {
       break;
     }
 
+#if 0
     /// sometimes it is bugos, usually at the end of the stack
     void ** next_fp = nullptr;
     if ((uint64_t)fp > 4096) {
@@ -366,9 +369,12 @@ int unw_backtrace(void **buffer, int size) {
         if ((unw_word_t)pc != ip)
           abort();
     }
+#endif
 
     buffer[current++] = reinterpret_cast<void *>(static_cast<uintptr_t>(ip));
+#if 0
     fp = next_fp;
+#endif
   }
 
   return current;
