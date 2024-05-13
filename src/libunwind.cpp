@@ -384,41 +384,64 @@ int unw_backtrace(void **buffer, int size) {
 #ifndef NDEBUG
 #include <stdlib.h>
 
+static bool log_apis = false;
+static bool log_unwinding = false;
+static bool log_dwarf = false;
+
+static bool thread_local thread_log_apis = false;
+static bool thread_local thread_log_unwinding = false;
+static bool thread_local thread_log_dwarf = false;
+
 _LIBUNWIND_HIDDEN
 bool logAPIs() {
   // do manual lock to avoid use of _cxa_guard_acquire or initializers
   static bool checked = false;
-  static bool log = false;
   if (!checked) {
-    log = (getenv("LIBUNWIND_PRINT_APIS") != NULL);
+    log_apis = (getenv("LIBUNWIND_PRINT_APIS") != NULL);
     checked = true;
   }
-  return log;
+  return log_apis || thread_log_apis;
 }
 
 _LIBUNWIND_HIDDEN
 bool logUnwinding() {
   // do manual lock to avoid use of _cxa_guard_acquire or initializers
   static bool checked = false;
-  static bool log = false;
   if (!checked) {
-    log = (getenv("LIBUNWIND_PRINT_UNWINDING") != NULL);
+    log_unwinding = (getenv("LIBUNWIND_PRINT_UNWINDING") != NULL);
     checked = true;
   }
-  return log;
+  return log_unwinding || thread_log_unwinding;
 }
 
 _LIBUNWIND_HIDDEN
 bool logDWARF() {
   // do manual lock to avoid use of _cxa_guard_acquire or initializers
   static bool checked = false;
-  static bool log = false;
   if (!checked) {
-    log = (getenv("LIBUNWIND_PRINT_DWARF") != NULL);
+    log_dwarf = (getenv("LIBUNWIND_PRINT_DWARF") != NULL);
     checked = true;
   }
-  return log;
+  return log_dwarf || thread_log_dwarf;
 }
 
-#endif // NDEBUG
+void libunwindSetPerThreadLogAPIs(int val)
+{
+    thread_log_apis = !!val;
+}
+void libunwindSetPerThreadLogUnwinding(int val)
+{
+    thread_log_unwinding = !!val;
+}
+void libunwindSetPerThreadLogDWARF(int val)
+{
+    thread_log_dwarf = !!val;
+}
 
+#else
+
+void libunwindSetPerThreadLogAPIs(int) {}
+void libunwindSetPerThreadLogUnwinding(int) {}
+void libunwindSetPerThreadLogDWARF(int) {}
+
+#endif

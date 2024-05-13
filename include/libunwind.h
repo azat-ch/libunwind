@@ -134,6 +134,10 @@ extern int unw_backtrace(void **, int) LIBUNWIND_AVAIL;
 
 extern unw_addr_space_t unw_local_addr_space;
 
+void libunwindSetPerThreadLogAPIs(int val);
+void libunwindSetPerThreadLogUnwinding(int val);
+void libunwindSetPerThreadLogDWARF(int val);
+
 #ifdef __cplusplus
 }
 #endif
