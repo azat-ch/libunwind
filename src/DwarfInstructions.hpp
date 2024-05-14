@@ -232,7 +232,7 @@ int DwarfInstructions<A, R>::stepWithDwarf(A &addressSpace, pint_t pc,
     isSignalFrame = cieInfo.isSignalFrame;
     if (isSignalFrame)
     {
-      pc--;
+      pc++;
       ip = pc;
     }
 
