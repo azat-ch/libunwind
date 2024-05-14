@@ -445,7 +445,7 @@ bool CFI_Parser<A>::parseFDEInstructions(A &addressSpace,
 
     _LIBUNWIND_TRACE_DWARF("parseFDEInstructions(instructions=0x%0" PRIx64
                            ")\n",
-                           static_cast<uint64_t>(instructionsEnd));
+                           static_cast<uint64_t>(p));
 
     // see DWARF Spec, section 6.4.2 for details on unwind opcodes
     while ((p < instructionsEnd) && (codeOffset < pcoffset)) {
