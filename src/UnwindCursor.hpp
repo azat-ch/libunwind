@@ -2570,7 +2570,10 @@ void UnwindCursor<A, R>::setInfoBasedOnIPRegister(bool isReturnAddress) {
 #endif
 
   if (_isSignalFrame)
+  {
+    _LIBUNWIND_TRACE_DWARF("setInfoForSigReturn(_isSignalFrame)\n");
     ++pc;
+  }
 
   // Ask address space object to find unwind sections for this pc.
   UnwindInfoSections sects;
