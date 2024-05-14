@@ -288,6 +288,11 @@ int DwarfInstructions<A, R>::stepWithDwarf(A &addressSpace, pint_t pc,
       }
 
       isSignalFrame = cieInfo.isSignalFrame;
+      if (isSignalFrame)
+      {
+          pc--;
+          ip = pc;
+      }
 
 #if defined(_LIBUNWIND_TARGET_AARCH64)
       // If the target is aarch64 then the return address may have been signed
