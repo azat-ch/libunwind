@@ -229,6 +229,13 @@ int DwarfInstructions<A, R>::stepWithDwarf(A &addressSpace, pint_t pc,
     cie = cieInfo;
     fde = fdeInfo;
 
+    isSignalFrame = cieInfo.isSignalFrame;
+    if (isSignalFrame)
+    {
+      pc--;
+      ip = pc;
+    }
+
     PrologInfo prolog;
     if (CFI_Parser<A>::parseFDEInstructions(addressSpace, fdeInfo, cieInfo, pc,
                                             R::getArch(), &prolog)) {
@@ -285,13 +292,6 @@ int DwarfInstructions<A, R>::stepWithDwarf(A &addressSpace, pint_t pc,
             // explicit intructions how to restore it.
             returnAddress = registers.getRegister(cieInfo.returnAddressRegister);
         }
-      }
-
-      isSignalFrame = cieInfo.isSignalFrame;
-      if (isSignalFrame)
-      {
-          pc--;
-          ip = pc;
       }
 
 #if defined(_LIBUNWIND_TARGET_AARCH64)
