@@ -101,7 +101,7 @@ static bool isPointerValid(pint_t ptr)
 {
   unsigned char mincore_res = 0;
   auto page_size = sysconf(_SC_PAGESIZE);
-  return ptr && (0 == syscall(SYS_mincore, (void*)(ptr / page_size * page_size), 1, &mincore_res) || errno == ENOSYS);
+  return ptr && (0 == syscall(SYS_mincore, (void*)(ptr / page_size * page_size), 1, &mincore_res) || errno == ENOSYS || errno == EPERM);
 }
 
 template <typename A, typename R>
