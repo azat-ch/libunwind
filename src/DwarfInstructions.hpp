@@ -90,7 +90,6 @@ template <typename R> uint64_t getSparcWCookie(const R &, long) {
   return 0;
 }
 
-
 template <typename A, typename R>
 typename A::pint_t DwarfInstructions<A, R>::getSavedRegister(
     A &addressSpace, const R &registers, pint_t cfa,
@@ -340,7 +339,12 @@ int DwarfInstructions<A, R>::stepWithDwarf(A &addressSpace, pint_t pc,
 
       // Return address is address after call site instruction, so setting IP to
       // that does simualates a return.
-      newRegisters.setIP(returnAddress);
+      //
+      // In case of this is frame of signal handler, the IP should be
+      // incremented, because the IP saved in the signal handler points to
+      // first non-executed instruction, while FDE/CIE expects IP to be after
+      // the first non-executed instruction.
+      newRegisters.setIP(returnAddress + cieInfo.isSignalFrame);
 
       // Simulate the step by replacing the register set with the new ones.
       registers = newRegisters;
