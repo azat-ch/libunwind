@@ -17,7 +17,6 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include <unistd.h>
 
 #include <__libunwind_config.h>
 
@@ -47,6 +46,12 @@
 #elif defined(_AIX)
 // The traceback table at the end of each function is used for unwinding.
 #define _LIBUNWIND_SUPPORT_TBTAB_UNWIND 1
+#elif defined(__HAIKU__)
+  #if defined(_LIBUNWIND_USE_HAIKU_BSD_LIB)
+    #define _LIBUNWIND_USE_DL_ITERATE_PHDR 1
+  #endif
+  #define _LIBUNWIND_SUPPORT_DWARF_UNWIND 1
+  #define _LIBUNWIND_SUPPORT_DWARF_INDEX 1
 #else
   // Assume an ELF system with a dl_iterate_phdr function.
   #define _LIBUNWIND_USE_DL_ITERATE_PHDR 1
@@ -84,7 +89,7 @@
   __asm__(".globl " SYMBOL_NAME(aliasname));                                   \
   __asm__(SYMBOL_NAME(aliasname) " = " SYMBOL_NAME(name));                     \
   _LIBUNWIND_ALIAS_VISIBILITY(SYMBOL_NAME(aliasname))
-#elif defined(__ELF__) || defined(_AIX)
+#elif defined(__ELF__) || defined(_AIX) || defined(__wasm__)
 #define _LIBUNWIND_WEAK_ALIAS(name, aliasname)                                 \
   extern "C" _LIBUNWIND_EXPORT __typeof(name) aliasname                        \
       __attribute__((weak, alias(#name)));
@@ -109,10 +114,6 @@
 #define _LIBUNWIND_BUILD_SJLJ_APIS
 #endif
 
-#if defined(__i386__) || defined(__x86_64__) || defined(__powerpc__)
-#define _LIBUNWIND_SUPPORT_FRAME_APIS
-#endif
-
 #if defined(__i386__) || defined(__x86_64__) || defined(__powerpc__) ||        \
     (!defined(__APPLE__) && defined(__arm__)) || defined(__aarch64__) ||       \
     defined(__mips__) || defined(__riscv) || defined(__hexagon__) ||           \
@@ -126,7 +127,7 @@
 #if defined(_LIBUNWIND_REMEMBER_STACK_ALLOC) || defined(__APPLE__) ||          \
     defined(__linux__) || defined(__ANDROID__) || defined(__MINGW32__) ||      \
     defined(_LIBUNWIND_IS_BAREMETAL)
-#define _LIBUNWIND_REMEMBER_ALLOC(_size) alloca(_size)
+#define _LIBUNWIND_REMEMBER_ALLOC(_size) __builtin_alloca(_size)
 #define _LIBUNWIND_REMEMBER_FREE(_ptr)                                         \
   do {                                                                         \
   } while (0)
@@ -145,25 +146,6 @@
 #define _LIBUNWIND_REMEMBER_CLEANUP_NEEDED
 #endif
 
-#ifndef fileno
-int fileno(FILE *stream);
-#endif
-
-/// Wrapper for fprintf, to avoid using if from signal handler.
-/// Function snprintf is not signal-safe as well, but hopefully it will be fine.
-/// Don't care about checking result of write() here.
-#define _FPRINTF_WRAPPER(file, msg, ...) \
-  do { \
-    char buf[128]; \
-    int num_bytes = snprintf(buf, 128, msg __VA_OPT__(,) __VA_ARGS__); \
-    int fd = fileno(file); \
-    if (num_bytes > 0 && fd >= 0) \
-    { \
-      num_bytes = num_bytes < 128 ? num_bytes : 127; \
-      write(fd, buf, num_bytes); \
-    } \
-  } while(0);
-
 #if defined(NDEBUG) && defined(_LIBUNWIND_IS_BAREMETAL)
 #define _LIBUNWIND_ABORT(msg)                                                  \
   do {                                                                         \
@@ -172,7 +154,7 @@ int fileno(FILE *stream);
 #else
 #define _LIBUNWIND_ABORT(msg)                                                  \
   do {                                                                         \
-    _FPRINTF_WRAPPER(stderr, "libunwind: %s - %s\n", __func__, msg);           \
+    fprintf(stderr, "libunwind: %s - %s\n", __func__, msg);                    \
     fflush(stderr);                                                            \
     abort();                                                                   \
   } while (0)
@@ -182,10 +164,14 @@ int fileno(FILE *stream);
 #define _LIBUNWIND_LOG0(msg)
 #define _LIBUNWIND_LOG(msg, ...)
 #else
-#define _LIBUNWIND_LOG0(msg)                                               \
-  _FPRINTF_WRAPPER(stderr, "libunwind: " msg "\n")
-#define _LIBUNWIND_LOG(msg, ...)                                               \
-  _FPRINTF_WRAPPER(stderr, "libunwind: " msg "\n", __VA_ARGS__)
+#define _LIBUNWIND_LOG0(msg) do {                                              \
+    fprintf(stderr, "libunwind: " msg "\n");                                   \
+    fflush(stderr);                                                            \
+  } while (0)
+#define _LIBUNWIND_LOG(msg, ...) do {                                          \
+    fprintf(stderr, "libunwind: " msg "\n", __VA_ARGS__);                      \
+    fflush(stderr);                                                            \
+  } while (0)
 #endif
 
 #if defined(NDEBUG)
@@ -233,7 +219,7 @@ int fileno(FILE *stream);
   #define _LIBUNWIND_TRACE_DWARF(...)                                          \
     do {                                                                       \
       if (logDWARF())                                                          \
-        _FPRINTF_WRAPPER(stderr, __VA_ARGS__);                                 \
+        fprintf(stderr, __VA_ARGS__);                                          \
     } while (0)
 #endif
 

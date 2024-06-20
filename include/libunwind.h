@@ -81,7 +81,7 @@ typedef struct unw_addr_space *unw_addr_space_t;
 
 typedef int unw_regnum_t;
 typedef uintptr_t unw_word_t;
-#if defined(__arm__) && !defined(__ARM_DWARF_EH__)
+#if defined(__arm__) && !defined(__ARM_DWARF_EH__) && !defined(__SEH__)
 typedef uint64_t unw_fpreg_t;
 #else
 typedef double unw_fpreg_t;
@@ -130,7 +130,6 @@ extern int unw_is_fpreg(unw_cursor_t *, unw_regnum_t) LIBUNWIND_AVAIL;
 extern int unw_is_signal_frame(unw_cursor_t *) LIBUNWIND_AVAIL;
 extern int unw_get_proc_name(unw_cursor_t *, char *, size_t, unw_word_t *) LIBUNWIND_AVAIL;
 //extern int       unw_get_save_loc(unw_cursor_t*, int, unw_save_loc_t*);
-extern int unw_backtrace(void **, int) LIBUNWIND_AVAIL;
 
 extern unw_addr_space_t unw_local_addr_space;
 
@@ -877,6 +876,9 @@ enum {
   UNW_MIPS_F29 = 61,
   UNW_MIPS_F30 = 62,
   UNW_MIPS_F31 = 63,
+  // HI,LO have been dropped since r6, we keep them here.
+  // So, when we add DSP/MSA etc, we can use the same register indexes
+  // for r6 and pre-r6.
   UNW_MIPS_HI = 64,
   UNW_MIPS_LO = 65,
 };
@@ -1024,6 +1026,16 @@ enum {
   UNW_RISCV_F29 = 61,
   UNW_RISCV_F30 = 62,
   UNW_RISCV_F31 = 63,
+  // 65-95 -- Reserved for future standard extensions
+  // 96-127 -- v0-v31 (Vector registers)
+  // 128-3071 -- Reserved for future standard extensions
+  // 3072-4095 -- Reserved for custom extensions
+  // 4096-8191 -- CSRs
+  //
+  // VLENB CSR number: 0xC22 -- defined by section 3 of v-spec:
+  // https://github.com/riscv/riscv-v-spec/blob/master/v-spec.adoc#3-vector-extension-programmers-model
+  // VLENB DWARF number: 0x1000 + 0xC22
+  UNW_RISCV_VLENB = 0x1C22,
 };
 
 // VE register numbers

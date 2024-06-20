@@ -51,6 +51,7 @@ public:
     uint8_t   returnAddressRegister;
 #if defined(_LIBUNWIND_TARGET_AARCH64)
     bool      addressesSignedWithBKey;
+    bool      mteTaggedFrame;
 #endif
   };
 
@@ -325,6 +326,7 @@ const char *CFI_Parser<A>::parseCIE(A &addressSpace, pint_t cie,
   cieInfo->fdesHaveAugmentationData = false;
 #if defined(_LIBUNWIND_TARGET_AARCH64)
   cieInfo->addressesSignedWithBKey = false;
+  cieInfo->mteTaggedFrame = false;
 #endif
   cieInfo->cieStart = cie;
   pint_t p = cie;
@@ -353,7 +355,7 @@ const char *CFI_Parser<A>::parseCIE(A &addressSpace, pint_t cie,
   while (addressSpace.get8(p) != 0)
     ++p;
   ++p;
-  // parse code aligment factor
+  // parse code alignment factor
   cieInfo->codeAlignFactor = (uint32_t)addressSpace.getULEB128(p, cieContentEnd);
   // parse data alignment factor
   cieInfo->dataAlignFactor = (int)addressSpace.getSLEB128(p, cieContentEnd);
@@ -394,6 +396,9 @@ const char *CFI_Parser<A>::parseCIE(A &addressSpace, pint_t cie,
       case 'B':
         cieInfo->addressesSignedWithBKey = true;
         break;
+      case 'G':
+        cieInfo->mteTaggedFrame = true;
+        break;
 #endif
       default:
         // ignore unknown letters
@@ -407,14 +412,12 @@ const char *CFI_Parser<A>::parseCIE(A &addressSpace, pint_t cie,
 }
 
 
-/// "run" the DWARF instructions and create the abstact PrologInfo for an FDE
+/// "run" the DWARF instructions and create the abstract PrologInfo for an FDE
 template <typename A>
 bool CFI_Parser<A>::parseFDEInstructions(A &addressSpace,
                                          const FDE_Info &fdeInfo,
                                          const CIE_Info &cieInfo, pint_t upToPC,
                                          int arch, PrologInfo *results) {
-  results->cfaRegister = (uint32_t)(-1);
-
   // Alloca is used for the allocation of the rememberStack entries. It removes
   // the dependency on new/malloc but the below for loop can not be refactored
   // into functions. Entry could be saved during the processing of a CIE and
@@ -608,7 +611,7 @@ bool CFI_Parser<A>::parseFDEInstructions(A &addressSpace,
                                results->cfaRegisterOffset);
         break;
       case DW_CFA_def_cfa_expression:
-        results->cfaRegister = (uint32_t)(-1);
+        results->cfaRegister = 0;
         results->cfaExpression = (int64_t)p;
         length = addressSpace.getULEB128(p, instructionsEnd);
         assert(length < static_cast<pint_t>(~0) && "pointer overflow");
