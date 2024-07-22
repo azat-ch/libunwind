@@ -100,26 +100,26 @@ public:
         cfaRegister = (uint32_t)(-1);
       }
     }
-    void checkSaveRegister(uint64_t reg, PrologInfo &initialState, bool save) {
-      if (save && !savedRegisters[reg].initialStateSaved) {
+    void checkSaveRegister(uint64_t reg, PrologInfo &initialState) {
+      if (!savedRegisters[reg].initialStateSaved) {
         initialState.savedRegisters[reg] = savedRegisters[reg];
         savedRegisters[reg].initialStateSaved = true;
       }
     }
     void setRegister(uint64_t reg, RegisterSavedWhere newLocation,
-                     int64_t newValue, PrologInfo &initialState, bool save) {
-      checkSaveRegister(reg, initialState, save);
+                     int64_t newValue, PrologInfo &initialState) {
+      checkSaveRegister(reg, initialState);
       savedRegisters[reg].location = newLocation;
       savedRegisters[reg].value = newValue;
     }
     void setRegisterLocation(uint64_t reg, RegisterSavedWhere newLocation,
-                             PrologInfo &initialState, bool save) {
-      checkSaveRegister(reg, initialState, save);
+                             PrologInfo &initialState) {
+      checkSaveRegister(reg, initialState);
       savedRegisters[reg].location = newLocation;
     }
     void setRegisterValue(uint64_t reg, int64_t newValue,
-                          PrologInfo &initialState, bool save) {
-      checkSaveRegister(reg, initialState, save);
+                          PrologInfo &initialState) {
+      checkSaveRegister(reg, initialState);
       savedRegisters[reg].value = newValue;
     }
     void restoreRegisterToInitialState(uint64_t reg, PrologInfo &initialState) {
@@ -430,20 +430,18 @@ bool CFI_Parser<A>::parseFDEInstructions(A &addressSpace,
     pint_t instructions;
     pint_t instructionsEnd;
     pint_t pcoffset;
-    bool save;
   };
 
   ParseInfo parseInfoArray[] = {
       {cieInfo.cieInstructions, cieInfo.cieStart + cieInfo.cieLength,
-       (pint_t)(-1), false},
+       (pint_t)(-1)},
       {fdeInfo.fdeInstructions, fdeInfo.fdeStart + fdeInfo.fdeLength,
-       upToPC - fdeInfo.pcStart, true}};
+       upToPC - fdeInfo.pcStart}};
 
   for (const auto &info : parseInfoArray) {
     pint_t p = info.instructions;
     pint_t instructionsEnd = info.instructionsEnd;
     pint_t pcoffset = info.pcoffset;
-    bool save = info.save;
     pint_t codeOffset = 0;
 
     // initialState initialized as registers in results are modified. Use
@@ -455,7 +453,7 @@ bool CFI_Parser<A>::parseFDEInstructions(A &addressSpace,
                            static_cast<uint64_t>(instructionsEnd));
 
     // see DWARF Spec, section 6.4.2 for details on unwind opcodes
-    while ((p < instructionsEnd) && (codeOffset <= pcoffset)) {
+    while ((p < instructionsEnd) && (codeOffset < pcoffset)) {
       uint64_t reg;
       uint64_t reg2;
       int64_t offset;
@@ -500,7 +498,7 @@ bool CFI_Parser<A>::parseFDEInstructions(A &addressSpace,
               "malformed DW_CFA_offset_extended DWARF unwind, reg too big");
           return false;
         }
-        results->setRegister(reg, kRegisterInCFA, offset, initialState, save);
+        results->setRegister(reg, kRegisterInCFA, offset, initialState);
         _LIBUNWIND_TRACE_DWARF("DW_CFA_offset_extended(reg=%" PRIu64 ", "
                                "offset=%" PRId64 ")\n",
                                reg, offset);
@@ -523,7 +521,7 @@ bool CFI_Parser<A>::parseFDEInstructions(A &addressSpace,
               "malformed DW_CFA_undefined DWARF unwind, reg too big");
           return false;
         }
-        results->setRegisterLocation(reg, kRegisterUndefined, initialState, save);
+        results->setRegisterLocation(reg, kRegisterUndefined, initialState);
         _LIBUNWIND_TRACE_DWARF("DW_CFA_undefined(reg=%" PRIu64 ")\n", reg);
         break;
       case DW_CFA_same_value:
@@ -537,7 +535,7 @@ bool CFI_Parser<A>::parseFDEInstructions(A &addressSpace,
         // "same value" means register was stored in frame, but its current
         // value has not changed, so no need to restore from frame.
         // We model this as if the register was never saved.
-        results->setRegisterLocation(reg, kRegisterUnused, initialState, save);
+        results->setRegisterLocation(reg, kRegisterUnused, initialState);
         _LIBUNWIND_TRACE_DWARF("DW_CFA_same_value(reg=%" PRIu64 ")\n", reg);
         break;
       case DW_CFA_register:
@@ -554,7 +552,7 @@ bool CFI_Parser<A>::parseFDEInstructions(A &addressSpace,
           return false;
         }
         results->setRegister(reg, kRegisterInRegister, (int64_t)reg2,
-                             initialState, save);
+                             initialState);
         _LIBUNWIND_TRACE_DWARF(
             "DW_CFA_register(reg=%" PRIu64 ", reg2=%" PRIu64 ")\n", reg, reg2);
         break;
@@ -632,7 +630,7 @@ bool CFI_Parser<A>::parseFDEInstructions(A &addressSpace,
           return false;
         }
         results->setRegister(reg, kRegisterAtExpression, (int64_t)p,
-                             initialState, save);
+                             initialState);
         length = addressSpace.getULEB128(p, instructionsEnd);
         assert(length < static_cast<pint_t>(~0) && "pointer overflow");
         p += static_cast<pint_t>(length);
@@ -650,7 +648,7 @@ bool CFI_Parser<A>::parseFDEInstructions(A &addressSpace,
         }
         offset = addressSpace.getSLEB128(p, instructionsEnd) *
                  cieInfo.dataAlignFactor;
-        results->setRegister(reg, kRegisterInCFA, offset, initialState, save);
+        results->setRegister(reg, kRegisterInCFA, offset, initialState);
         _LIBUNWIND_TRACE_DWARF("DW_CFA_offset_extended_sf(reg=%" PRIu64 ", "
                                "offset=%" PRId64 ")\n",
                                reg, offset);
@@ -688,7 +686,7 @@ bool CFI_Parser<A>::parseFDEInstructions(A &addressSpace,
         }
         offset = (int64_t)addressSpace.getULEB128(p, instructionsEnd) *
                  cieInfo.dataAlignFactor;
-        results->setRegister(reg, kRegisterOffsetFromCFA, offset, initialState, save);
+        results->setRegister(reg, kRegisterOffsetFromCFA, offset, initialState);
         _LIBUNWIND_TRACE_DWARF("DW_CFA_val_offset(reg=%" PRIu64 ", "
                                "offset=%" PRId64 "\n",
                                reg, offset);
@@ -702,7 +700,7 @@ bool CFI_Parser<A>::parseFDEInstructions(A &addressSpace,
         }
         offset = addressSpace.getSLEB128(p, instructionsEnd) *
                  cieInfo.dataAlignFactor;
-        results->setRegister(reg, kRegisterOffsetFromCFA, offset, initialState, save);
+        results->setRegister(reg, kRegisterOffsetFromCFA, offset, initialState);
         _LIBUNWIND_TRACE_DWARF("DW_CFA_val_offset_sf(reg=%" PRIu64 ", "
                                "offset=%" PRId64 "\n",
                                reg, offset);
@@ -715,7 +713,7 @@ bool CFI_Parser<A>::parseFDEInstructions(A &addressSpace,
           return false;
         }
         results->setRegister(reg, kRegisterIsExpression, (int64_t)p,
-                             initialState, save);
+                             initialState);
         length = addressSpace.getULEB128(p, instructionsEnd);
         assert(length < static_cast<pint_t>(~0) && "pointer overflow");
         p += static_cast<pint_t>(length);
@@ -738,7 +736,7 @@ bool CFI_Parser<A>::parseFDEInstructions(A &addressSpace,
         }
         offset = (int64_t)addressSpace.getULEB128(p, instructionsEnd) *
                  cieInfo.dataAlignFactor;
-        results->setRegister(reg, kRegisterInCFA, -offset, initialState, save);
+        results->setRegister(reg, kRegisterInCFA, -offset, initialState);
         _LIBUNWIND_TRACE_DWARF(
             "DW_CFA_GNU_negative_offset_extended(%" PRId64 ")\n", offset);
         break;
@@ -756,7 +754,7 @@ bool CFI_Parser<A>::parseFDEInstructions(A &addressSpace,
           int64_t value =
               results->savedRegisters[UNW_AARCH64_RA_SIGN_STATE].value ^ 0x1;
           results->setRegisterValue(UNW_AARCH64_RA_SIGN_STATE, value,
-                                    initialState, save);
+                                    initialState);
           _LIBUNWIND_TRACE_DWARF("DW_CFA_AARCH64_negate_ra_state\n");
         } break;
 #endif
@@ -768,13 +766,13 @@ bool CFI_Parser<A>::parseFDEInstructions(A &addressSpace,
           for (reg = UNW_SPARC_O0; reg <= UNW_SPARC_O7; reg++) {
             results->setRegister(reg, kRegisterInRegister,
                                  ((int64_t)reg - UNW_SPARC_O0) + UNW_SPARC_I0,
-                                 initialState, save);
+                                 initialState);
           }
 
           for (reg = UNW_SPARC_L0; reg <= UNW_SPARC_I7; reg++) {
             results->setRegister(reg, kRegisterInCFA,
                                  ((int64_t)reg - UNW_SPARC_L0) * 4,
-                                 initialState, save);
+                                 initialState);
           }
           break;
 #endif
@@ -790,12 +788,12 @@ bool CFI_Parser<A>::parseFDEInstructions(A &addressSpace,
               results->setRegister(
                   reg, kRegisterInCFADecrypt,
                   static_cast<int64_t>((reg - UNW_SPARC_L0) * sizeof(pint_t)),
-                  initialState, save);
+                  initialState);
             else
               results->setRegister(
                   reg, kRegisterInCFA,
                   static_cast<int64_t>((reg - UNW_SPARC_L0) * sizeof(pint_t)),
-                  initialState, save);
+                  initialState);
           }
           _LIBUNWIND_TRACE_DWARF("DW_CFA_GNU_window_save\n");
           break;
@@ -820,7 +818,7 @@ bool CFI_Parser<A>::parseFDEInstructions(A &addressSpace,
           }
           offset = (int64_t)addressSpace.getULEB128(p, instructionsEnd) *
                    cieInfo.dataAlignFactor;
-          results->setRegister(reg, kRegisterInCFA, offset, initialState, save);
+          results->setRegister(reg, kRegisterInCFA, offset, initialState);
           _LIBUNWIND_TRACE_DWARF("DW_CFA_offset(reg=%d, offset=%" PRId64 ")\n",
                                  operand, offset);
           break;
