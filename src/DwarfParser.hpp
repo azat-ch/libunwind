@@ -452,7 +452,14 @@ bool CFI_Parser<A>::parseFDEInstructions(A &addressSpace,
                            ")\n",
                            static_cast<uint64_t>(instructionsEnd));
 
-    // see DWARF Spec, section 6.4.2 for details on unwind opcodes
+    // see DWARF Spec, section 6.4.2 for details on unwind opcodes;
+    //
+    // Note that we're looking for the PrologInfo for address `codeOffset - 1`,
+    // hence '<' instead of '<=" in `codeOffset < pcoffset`
+    // (compare to DWARF Spec section 6.4.3 "Call Frame Instruction Usage").
+    // The -1 accounts for the fact that function return address points to the
+    // next instruction *after* the `call` instruction, while control is
+    // logically "inside" the `call` instruction.
     while ((p < instructionsEnd) && (codeOffset < pcoffset)) {
       uint64_t reg;
       uint64_t reg2;
