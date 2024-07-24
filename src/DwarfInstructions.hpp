@@ -381,10 +381,13 @@ int DwarfInstructions<A, R>::stepWithDwarf(A &addressSpace, pint_t pc,
       // Return address is address after call site instruction, so setting IP to
       // that simulates a return.
       //
-      // In case of this is frame of signal handler, the IP should be
-      // incremented, because the IP saved in the signal handler points to
-      // first non-executed instruction, while FDE/CIE expects IP to be after
-      // the first non-executed instruction.
+      // The +-1 situation is subtle.
+      // Return address points to the next instruction after the `call`
+      // instruction, but logically we're "inside" the call instruction, and
+      // FDEs are constructed accordingly.
+      // So our FDE parsing implicitly subtracts 1 from the address.
+      // But for signal return, there's no `call` instruction, and
+      // subtracting 1 would be incorrect. So we add 1 here to compensate.
       newRegisters.setIP(returnAddress + cieInfo.isSignalFrame);
 
       // Simulate the step by replacing the register set with the new ones.
